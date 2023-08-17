@@ -1,0 +1,165 @@
+//
+// Created by XIAOSENLUO on 2023/2/27.
+//
+
+#include "bqueue.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void *queue_read(queue_t *queue){
+    if(queue_is_empty(queue)) return NULL;
+    void *data = queue->buffer[queue->tail];
+    queue->tail = (queue->tail + 1) % queue->size;
+    if(queue->tail == queue->head) queue->full = 0;
+    return data;
+}
+
+int queue_write(queue_t *queue, void *data){
+    if(queue_is_full(queue)) return -1;
+    queue->buffer[queue->head] = data;
+    queue->head = (queue->head + 1) % queue->size;
+    if(queue->head == queue->tail) queue->full = 1;
+    return queue->head;
+}
+
+b_handle bq_initialize(byte_queue_t * const bq, uint8_t * const buffer, const uint16_t bsize){
+    byte_queue_t * const bhandle = (byte_queue_t *)(bq);
+    bhandle->buffer = buffer;
+    bhandle->end = bsize;
+    bhandle->front = 0;
+    bhandle->full = 0;
+    if(bsize != 0){
+        bhandle->head = 0;
+        bhandle->tail = 0;
+    }
+    bhandle->nfree = bsize;
+    bhandle->nmin = bhandle->nfree;
+    return (b_handle)bq;
+}
+
+
+const uint16_t bq_post(b_handle * const bqh, uint8_t const *data, const uint16_t dsize){
+
+    CRIT_SEC_E_;
+
+    byte_queue_t * const bhandle = (byte_queue_t *)(*bqh);
+    volatile uint16_t nfree = bhandle->nfree;
+    uint32_t *dest = (uint32_t *)&bhandle->buffer[bhandle->head];
+    uint32_t *src = (uint32_t *)data;
+    uint16_t bc = 0;
+
+    if((nfree == 0) || (nfree < dsize) || (dsize == 0)){
+        CRIT_SEC_X_;
+        return 0;
+    }
+
+    nfree -= dsize;
+    bhandle->nfree = nfree;
+
+    if(bhandle->nmin > nfree){
+        bhandle->nmin = nfree;
+    }
+
+//    bc = dsize >> 2;
+//    while(bc > 0){
+//        *dest++ = *src++;
+//        bc--;
+//        bhandle->head = (bhandle->head + 4) % bhandle->end;
+//    }
+
+    bc = dsize - (bc << 2);
+
+    while(bc > 0){
+        bhandle->buffer[bhandle->head] = data[dsize - bc];
+        --bc;
+        ++bhandle->head;
+        if(bhandle->head == bhandle->end){
+            bhandle->head = 0;
+        }
+    }
+    CRIT_SEC_X_;
+    return dsize;
+}
+
+const uint16_t bq_post_lifo(b_handle * const bqh, uint8_t const *data, const uint16_t dsize){
+
+    CRIT_SEC_E_;
+
+    byte_queue_t * const bhandle = (byte_queue_t *)(*bqh);
+    volatile uint16_t nfree = bhandle->nfree;
+    uint32_t *dest = (uint32_t *)&bhandle->buffer[bhandle->head];
+    uint32_t *src = (uint32_t *)data;
+    uint16_t bc = 0;
+
+    if((nfree == 0) || (nfree < dsize)){
+        CRIT_SEC_X_;
+        return 0;
+    }
+
+    nfree -= dsize;
+    bhandle->nfree = nfree;
+
+    if(bhandle->nmin > nfree){
+        bhandle->nmin = nfree;
+    }
+
+    bc = dsize - (bc << 2);
+
+    while(bc > 0){
+        if(bhandle->tail == 0){
+            bhandle->tail = bhandle->end;
+        }
+        --bhandle->tail;
+        bhandle->buffer[bhandle->tail] = data[dsize - bc];
+        --bc;
+    }
+
+    CRIT_SEC_X_;
+    return dsize;
+}
+
+const uint16_t bq_get(b_handle * const bqh, uint8_t * const odata, const uint16_t dsize){
+
+    CRIT_SEC_E_;
+
+    byte_queue_t * const bhandle = (byte_queue_t *)(*bqh);
+    const uint16_t available = bhandle->end - bhandle->nfree;
+    uint16_t bc = 0;
+
+    if(available == 0){
+        CRIT_SEC_X_;
+        return 0;
+    }
+
+    bc = dsize > (available) ? available : dsize;
+
+    bhandle->nfree += bc;
+
+    for(uint16_t i = 0; i < bc; i++){
+        odata[i] = bhandle->buffer[bhandle->tail];
+        ++bhandle->tail;
+        if(bhandle->tail == bhandle->end){
+            bhandle->tail = 0;
+        }
+    }
+
+    CRIT_SEC_X_;
+    return bc;
+}
+
+const uint8_t bq_get_byte(b_handle * const bqh, uint8_t * const ok){
+    uint16_t nr = 0;
+    uint8_t rd = 0;
+    nr = bq_get(bqh, &rd, 1);
+    if((nr == 0) && ok){
+        *ok = 0;
+    }
+    return rd;
+}
+
+#ifdef __cplusplus
+}
+#endif
+
