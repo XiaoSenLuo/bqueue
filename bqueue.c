@@ -46,33 +46,33 @@ const uint16_t bq_post(b_handle * const bqh, uint8_t const *data, const uint16_t
 
     byte_queue_t * const bhandle = (byte_queue_t *)(*bqh);
     volatile uint16_t nfree = bhandle->nfree;
-    uint32_t *dest = (uint32_t *)&bhandle->buffer[bhandle->head];
-    uint32_t *src = (uint32_t *)data;
-    uint16_t bc = 0;
+    // uint32_t *dest = (uint32_t *)&bhandle->buffer[bhandle->head];
+    // uint32_t *src = (uint32_t *)data;
+    uint16_t bc = 0, len = 0;
 
-    if((nfree == 0) || (nfree < dsize) || (dsize == 0)){
+    if((nfree == 0) || (dsize == 0)){
         CRIT_SEC_X_;
         return 0;
     }
-
-    nfree -= dsize;
+    len =  (nfree < dsize) ? nfree : dsize;
+    nfree -= len;
     bhandle->nfree = nfree;
 
     if(bhandle->nmin > nfree){
         bhandle->nmin = nfree;
     }
 
-//    bc = dsize >> 2;
+//    bc = len >> 2;
 //    while(bc > 0){
 //        *dest++ = *src++;
 //        bc--;
 //        bhandle->head = (bhandle->head + 4) % bhandle->end;
 //    }
 
-    bc = dsize - (bc << 2);
+    bc = len;
 
     while(bc > 0){
-        bhandle->buffer[bhandle->head] = data[dsize - bc];
+        bhandle->buffer[bhandle->head] = data[len - bc];
         --bc;
         ++bhandle->head;
         if(bhandle->head == bhandle->end){
@@ -80,7 +80,7 @@ const uint16_t bq_post(b_handle * const bqh, uint8_t const *data, const uint16_t
         }
     }
     CRIT_SEC_X_;
-    return dsize;
+    return len;
 }
 
 const uint16_t bq_post_lifo(b_handle * const bqh, uint8_t const *data, const uint16_t dsize){
@@ -91,33 +91,33 @@ const uint16_t bq_post_lifo(b_handle * const bqh, uint8_t const *data, const uin
     volatile uint16_t nfree = bhandle->nfree;
     uint32_t *dest = (uint32_t *)&bhandle->buffer[bhandle->head];
     uint32_t *src = (uint32_t *)data;
-    uint16_t bc = 0;
+    uint16_t bc = 0, len = 0;
 
-    if((nfree == 0) || (nfree < dsize)){
+    if((nfree == 0) || (dsize == 0)){
         CRIT_SEC_X_;
         return 0;
     }
-
-    nfree -= dsize;
+    len =  (nfree < dsize) ? nfree : dsize;
+    nfree -= len;
     bhandle->nfree = nfree;
 
     if(bhandle->nmin > nfree){
         bhandle->nmin = nfree;
     }
 
-    bc = dsize - (bc << 2);
+    bc = len;
 
     while(bc > 0){
         if(bhandle->tail == 0){
             bhandle->tail = bhandle->end;
         }
         --bhandle->tail;
-        bhandle->buffer[bhandle->tail] = data[dsize - bc];
+        bhandle->buffer[bhandle->tail] = data[len - bc];
         --bc;
     }
 
     CRIT_SEC_X_;
-    return dsize;
+    return len;
 }
 
 const uint16_t bq_get(b_handle * const bqh, uint8_t * const odata, const uint16_t dsize){
@@ -153,8 +153,8 @@ const uint8_t bq_get_byte(b_handle * const bqh, uint8_t * const ok){
     uint16_t nr = 0;
     uint8_t rd = 0;
     nr = bq_get(bqh, &rd, 1);
-    if((nr == 0) && ok){
-        *ok = 0;
+    if(ok){
+        *ok = (nr == 0) ? 1 : 0;
     }
     return rd;
 }
