@@ -223,11 +223,11 @@ static void usart_rx_dma_circle_post_(usart_device_t *device, DMA_TypeDef *DMAx,
         if((rx_head > rx_tail)){
             /// 比前一次大, 说明循环从头再来
             available = rx_tail + (rx_end - rx_head);
-            bq_post(&device->bqh_rx, &device->rx_buffer[rx_end - rx_tail], rx_tail);
-            bq_post(&device->bqh_rx, &device->rx_buffer[0], rx_end - rx_head);
+            bq_post(device->bqh_rx, &device->rx_buffer[rx_end - rx_tail], rx_tail);
+            bq_post(device->bqh_rx, &device->rx_buffer[0], rx_end - rx_head);
         }else{
             available = rx_tail - rx_head;
-            bq_post(&device->bqh_rx, &device->rx_buffer[rx_end - rx_tail], available);
+            bq_post(device->bqh_rx, &device->rx_buffer[rx_end - rx_tail], available);
         }
     }
 
@@ -247,7 +247,7 @@ static void usart_tx_circle_get_(usart_device_t *device, DMA_TypeDef *DMAx, uint
     const uint16_t nsend = available && (available > sizeof(device->tx_buffer)) ? sizeof(device->tx_buffer) : available;
     device->tx_nfree = sizeof(device->tx_buffer) - nsend;
     if(nsend){
-        bq_get(&device->bqh_tx, device->tx_buffer, nsend);
+        bq_get(device->bqh_tx, device->tx_buffer, nsend);
     }
     /**
      * @brief nsend = 0, 没有数据要发送, 但是此时最后一帧数据没有发送完成, 用户应该等待 tx_nfree == UINT8_MAX
@@ -787,7 +787,7 @@ uint16_t uart_write_bytes(const uint8_t index, void *data, uint16_t length, uint
 
         while(remain > 0){
             uint16_t npost = 0;
-            npost = bq_get_free(&hdevice[id]->bqh_tx);
+            npost = bq_get_free(hdevice[id]->bqh_tx);
             if(timeout_ms && (npost == 0)){
                 HAL_Delay(1);
                 --timeout_ms;
@@ -797,7 +797,7 @@ uint16_t uart_write_bytes(const uint8_t index, void *data, uint16_t length, uint
 //            if(!((npost >= (remain >> 1)) || (npost >= (tx_end >> 1)))) continue;
 
             npost = npost > remain ? remain : npost;
-            npost = bq_post(&hdevice[id]->bqh_tx, &data[offset], npost);
+            npost = bq_post(hdevice[id]->bqh_tx, &data[offset], npost);
             offset += npost;
             remain -= npost;
         }
@@ -815,7 +815,7 @@ uint16_t uart_available_bytes(const uint8_t index){
     for(int i = 0; i < (sizeof(hdevice) / sizeof(usart_device_t *)); i++){
         if(i != id) continue;
         if(hdevice[i] == NULL) break;
-        al = bq_length(&hdevice[id]->bqh_rx);
+        al = bq_length(hdevice[id]->bqh_rx);
         break;
     }
     return al;
@@ -830,7 +830,7 @@ uint16_t uart_read_bytes(const uint8_t index, void *data, uint16_t length, uint3
         if(hdevice[i] == NULL) break;
         do{
             read_section:
-            rl = bq_get(&hdevice[id]->bqh_rx, &data[length - remain], remain);
+            rl = bq_get(hdevice[id]->bqh_rx, &data[length - remain], remain);
             remain -= rl;
             if(remain == 0) break;
             if((rl == 0) && timeout_ms){

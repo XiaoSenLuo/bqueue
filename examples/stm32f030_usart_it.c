@@ -120,12 +120,12 @@ void USART1_IRQHandler(void)
     if(LL_USART_IsEnabledIT_RXNE(USART1) && LL_USART_IsActiveFlag_RXNE(USART1)){
         __IO uint8_t rc = 0;
         rc = LL_USART_ReceiveData8(USART1);
-        bq_post(&bh_usart_rx, (uint8_t *)&rc, 1);
+        bq_post(bh_usart_rx, (uint8_t *)&rc, 1);
     }
     if(LL_USART_IsEnabledIT_TXE(USART1) && LL_USART_IsActiveFlag_TXE(USART1)){
         uint8_t tc = 0;
         uint16_t tl = 0;
-        tl = bq_get(&bh_usart_tx, &tc, 1);
+        tl = bq_get(bh_usart_tx, &tc, 1);
         if(tl == 0){
             LL_USART_DisableIT_TXE(USART1);
             // LL_USART_EnableIT_TC(USART1);
@@ -156,7 +156,7 @@ uint16_t usart_write(uint8_t * const data, const uint16_t length, const uint32_t
     uint16_t rn = length;
     uint16_t bql = 0, bqf = 0;
 
-    bql = bq_length(&bh_usart_tx);
+    bql = bq_length(bh_usart_tx);
     // 待发送队列空
     if(bql == 0){
         LL_USART_TransmitData8(USART1, data[length - rn]);
@@ -166,7 +166,7 @@ uint16_t usart_write(uint8_t * const data, const uint16_t length, const uint32_t
     if(rn == 0) return length;
     do{
         // int32_t st = SysTick->VAL;
-        bqf = bq_get_free(&bh_usart_tx);
+        bqf = bq_get_free(bh_usart_tx);
         if(bqf == 0){
             // int32_t se = st - (SysTick->LOAD >> 3);
             // if(se < 0){
@@ -180,10 +180,10 @@ uint16_t usart_write(uint8_t * const data, const uint16_t length, const uint32_t
             continue;
         }
         if(bqf > rn){
-            bq_post(&bh_usart_tx, &data[length - rn], rn);
+            bq_post(bh_usart_tx, &data[length - rn], rn);
             rn = 0;
         }else{
-            bq_post(&bh_usart_tx, &data[length - rn], bqf);
+            bq_post(bh_usart_tx, &data[length - rn], bqf);
             rn -= bqf;
         }
     }while(rn);
@@ -195,12 +195,12 @@ uint16_t usart_read(uint8_t * const data, const uint16_t length, const uint32_t 
     uint16_t rn = length;
     uint16_t bql = 0;
     do{
-        bql = bq_length(&bh_usart_rx);
+        bql = bq_length(bh_usart_rx);
         if(bql > rn){
-            bq_get(&bh_usart_rx, &data[length - rn], rn);
+            bq_get(bh_usart_rx, &data[length - rn], rn);
             rn = 0;
         }else{
-            bq_get(&bh_usart_rx, &data[length - rn], bql);
+            bq_get(bh_usart_rx, &data[length - rn], bql);
             rn -= bql;
         }
     }while(rn);

@@ -71,63 +71,63 @@ typedef void * b_handle;
 
 b_handle bq_initialize(byte_queue_t * const bq, uint8_t * const buffer, const uint16_t bsize);
 
-const uint16_t bq_post(b_handle * const bqh, uint8_t const * const data, const uint16_t dsize);
+const uint16_t bq_post(b_handle const bqh, uint8_t const * const data, const uint16_t dsize);
 
-const uint16_t bq_post_lifo(b_handle * const bqh, uint8_t const *const data, const uint16_t dsize);
+const uint16_t bq_post_lifo(b_handle const bqh, uint8_t const *const data, const uint16_t dsize);
 
-const uint16_t bq_get(b_handle * const bqh, uint8_t * const odata, const uint16_t dsize);
+const uint16_t bq_get(b_handle const bqh, uint8_t * const odata, const uint16_t dsize);
 
-const uint8_t bq_get_byte(b_handle * const bqh, uint8_t * const ok);
+const uint8_t bq_get_byte(b_handle const bqh, uint8_t * const ok);
 
-static inline const uint16_t bq_get_free(b_handle * const bqh){
+static inline const uint16_t bq_get_free(b_handle const bqh){
     CRIT_SEC_E_;
-    const uint16_t nfree = ((byte_queue_t *)(*bqh))->nfree;
+    const uint16_t nfree = ((byte_queue_t *)(bqh))->nfree;
     CRIT_SEC_X_;
     return nfree;
 }
 
-static inline const uint16_t bq_full_size(b_handle * const bqh){
+static inline const uint16_t bq_full_size(b_handle const bqh){
     CRIT_SEC_E_;
-    const uint16_t end = ((byte_queue_t *)(*bqh))->end;
+    const uint16_t end = ((byte_queue_t *)(bqh))->end;
     CRIT_SEC_X_;
     return end;
 }
 
 static inline const uint16_t  bq_get_min(b_handle const *bqh){
     CRIT_SEC_E_;
-    const uint16_t nmin = ((byte_queue_t *)(*bqh))->nmin;
+    const uint16_t nmin = ((byte_queue_t *)(bqh))->nmin;
     CRIT_SEC_X_;
     return nmin;
 }
 
-static inline const uint8_t bq_is_empty(b_handle * const bqh){
+static inline const uint8_t bq_is_empty(b_handle const bqh){
     CRIT_SEC_E_;
     uint8_t empty = 0;
-    if(((byte_queue_t *)(*bqh))->nfree == ((byte_queue_t *)(*bqh))->end) empty = 1;
+    if(((byte_queue_t *)(bqh))->nfree == ((byte_queue_t *)(bqh))->end) empty = 1;
     CRIT_SEC_X_;
     return empty;
 }
 
-static inline const uint8_t bq_is_full(b_handle * const bqh){
+static inline const uint8_t bq_is_full(b_handle const bqh){
     return bq_get_free(bqh) ? 0 : 1;
 }
 
-static inline const uint16_t bq_length(b_handle * const bqh){
+static inline const uint16_t bq_length(b_handle const bqh){
     CRIT_SEC_E_;
-    const uint16_t available = ((byte_queue_t *)(*bqh))->end - ((byte_queue_t *)(*bqh))->nfree;
+    const uint16_t available = ((byte_queue_t *)(bqh))->end - ((byte_queue_t *)(bqh))->nfree;
     CRIT_SEC_X_;
     return available;
 }
 
-static inline const uint16_t bq_size(b_handle * const bqh){
+static inline const uint16_t bq_size(b_handle const bqh){
     return bq_length(bqh);
 }
 
-static inline void bq_clear(b_handle * const bqh){
+static inline void bq_clear(b_handle const bqh){
     CRIT_SEC_E_;
-    ((byte_queue_t *)(*bqh))->nfree = ((byte_queue_t *)(*bqh))->end;
-    ((byte_queue_t *)(*bqh))->head = 0;
-    ((byte_queue_t *)(*bqh))->tail = 0;
+    ((byte_queue_t *)(bqh))->nfree = ((byte_queue_t *)(bqh))->end;
+    ((byte_queue_t *)(bqh))->head = 0;
+    ((byte_queue_t *)(bqh))->tail = 0;
     CRIT_SEC_X_;
 }
 

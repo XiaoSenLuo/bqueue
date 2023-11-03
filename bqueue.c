@@ -40,11 +40,11 @@ b_handle bq_initialize(byte_queue_t * const bq, uint8_t * const buffer, const ui
 }
 
 
-const uint16_t bq_post(b_handle * const bqh, uint8_t const *data, const uint16_t dsize){
+const uint16_t bq_post(b_handle const bqh, uint8_t const *data, const uint16_t dsize){
 
     CRIT_SEC_E_;
 
-    byte_queue_t * const bhandle = (byte_queue_t *)(*bqh);
+    byte_queue_t * const bhandle = (byte_queue_t *)(bqh);
     volatile uint16_t nfree = bhandle->nfree;
     // uint32_t *dest = (uint32_t *)&bhandle->buffer[bhandle->head];
     // uint32_t *src = (uint32_t *)data;
@@ -83,11 +83,11 @@ const uint16_t bq_post(b_handle * const bqh, uint8_t const *data, const uint16_t
     return len;
 }
 
-const uint16_t bq_post_lifo(b_handle * const bqh, uint8_t const *data, const uint16_t dsize){
+const uint16_t bq_post_lifo(b_handle const bqh, uint8_t const *data, const uint16_t dsize){
 
     CRIT_SEC_E_;
 
-    byte_queue_t * const bhandle = (byte_queue_t *)(*bqh);
+    byte_queue_t * const bhandle = (byte_queue_t *)(bqh);
     volatile uint16_t nfree = bhandle->nfree;
     uint32_t *dest = (uint32_t *)&bhandle->buffer[bhandle->head];
     uint32_t *src = (uint32_t *)data;
@@ -120,11 +120,11 @@ const uint16_t bq_post_lifo(b_handle * const bqh, uint8_t const *data, const uin
     return len;
 }
 
-const uint16_t bq_get(b_handle * const bqh, uint8_t * const odata, const uint16_t dsize){
+const uint16_t bq_get(b_handle const bqh, uint8_t * const odata, const uint16_t dsize){
 
     CRIT_SEC_E_;
 
-    byte_queue_t * const bhandle = (byte_queue_t *)(*bqh);
+    byte_queue_t * const bhandle = (byte_queue_t *)(bqh);
     const uint16_t available = bhandle->end - bhandle->nfree;
     uint16_t bc = 0;
 
@@ -149,7 +149,7 @@ const uint16_t bq_get(b_handle * const bqh, uint8_t * const odata, const uint16_
     return bc;
 }
 
-const uint8_t bq_get_byte(b_handle * const bqh, uint8_t * const ok){
+const uint8_t bq_get_byte(b_handle const bqh, uint8_t * const ok){
     uint16_t nr = 0;
     uint8_t rd = 0;
     nr = bq_get(bqh, &rd, 1);
